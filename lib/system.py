@@ -163,25 +163,28 @@ def GetAPI(session,url, cursor=None, result_list = []):
     if result.status_code == 200:
         resultJSON = result.json()
         resultTEMPJSON = resultJSON
-        if 'result_count' in resultJSON: count = resultJSON['result_count']
+
         # handle cursor
-        if 'cursor' in resultJSON and int(resultJSON['cursor']) < int(resultJSON['result_count']):
-            while True:
-                if 'cursor' not in resultTEMPJSON:
-                    break
-                else:
-                    cursor = '?cursor=' + resultTEMPJSON['cursor']
-                    session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor)
-                    # if auth_list[2] == 'AUTH':
-                    #     result =  session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, auth=(auth_list[0], auth_list[1]), verify=session.verify)
-                    # if auth_list[2] == 'CERT':
-                    #     result =  requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
-                    if result.status_code == 200:
-                        resultTEMPJSON = result.json()
-                        resultJSON['results'] = resultJSON['results'] + resultTEMPJSON['results']
+        while 'cursor' in resultJSON and len(resultJSON['results']) < resultJSON['result_count']:
+            if 'cursor' not in resultTEMPJSON:
+                # break if there's no longer a cursor
+                break
+            elif not resultTEMPJSON['results']:
+                # break if the cursor doesn't return any results
+                break
+            else:
+                cursor = '?cursor=' + resultTEMPJSON['cursor']
+                result = session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor)
+                # if auth_list[2] == 'AUTH':
+                #     result =  session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, auth=(auth_list[0], auth_list[1]), verify=session.verify)
+                # if auth_list[2] == 'CERT':
+                #     result =  requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
+                if result.status_code == 200:
+                    resultTEMPJSON = result.json()
+                    resultJSON['results'] = resultJSON['results'] + resultTEMPJSON['results']
 
         return resultJSON
-    
+
     else: 
         return result.status_code
 
